@@ -1,102 +1,75 @@
-node-telnet
-===========
-### Telnet implementation for Node.js
-[![Build Status](https://secure.travis-ci.org/TooTallNate/node-telnet.png)](http://travis-ci.org/TooTallNate/node-telnet)
+# node-telnet2
 
+A fork of [node-telnet][1], implementing env-vars, term-type, and other
+miscellaneous features. It is backwardly compatible with node-telnet.
 
-This module offers an implementation of the [Telnet Protocol (RFC854)][rfc],
-making it possible to write a telnet server that can interact with the various
-telnet features.
-
-### Implemented Options:
-
-| **Name**            | **Event**             |**Specification**
-|:--------------------|:----------------------|:-------------------------
-| Binary transmission | `'transmit binary'`   | [RFC856](http://tools.ietf.org/html/rfc856)
-| Echo                | `'echo'`              | [RFC857](http://tools.ietf.org/html/rfc857)
-| Suppress Go Ahead   | `'suppress go ahead'` | [RFC858](http://tools.ietf.org/html/rfc858)
-| Window Size         | `'window size'`       | [RFC1073](http://tools.ietf.org/html/rfc1073)
-
-
-Installation
-------------
-
-Install with `npm`:
-
-``` bash
-$ npm install telnet
-```
-
-
-Examples
---------
+## Example
 
 ``` js
-var telnet = require('telnet')
+var blessed = require('blessed');
+var telnet = require('telnet2');
 
-telnet.createServer(function (client) {
+telnet({ tty: true }, function(client) {
+  client.on('term', function(terminal) {
+    screen.terminal = terminal;
+    screen.render();
+  });
 
-  // make unicode characters work properly
-  client.do.transmit_binary()
+  client.on('size', function(width, height) {
+    client.columns = width;
+    client.rows = height;
+    client.emit('resize');
+  });
 
-  // make the client emit 'window size' events
-  client.do.window_size()
+  var screen = blessed.screen({
+    smartCSR: true,
+    input: client,
+    output: client,
+    terminal: 'xterm-256color',
+    fullUnicode: true
+  });
 
-  // listen for the window size events from the client
-  client.on('window size', function (e) {
-    if (e.command === 'sb') {
-      console.log('telnet window resized to %d x %d', e.width, e.height)
+  client.on('close', function() {
+    if (!screen.destroyed) {
+      screen.destroy();
     }
-  })
+  });
 
-  // listen for the actual data from the client
-  client.on('data', function (b) {
-    client.write(b)
-  })
+  screen.key(['C-c', 'q'], function(ch, key) {
+    screen.destroy();
+  });
 
-  client.write('\nConnected to Telnet server!\n')
+  screen.on('destroy', function() {
+    if (client.writable) {
+      client.destroy();
+    }
+  });
 
-}).listen(23)
+  screen.data.main = blessed.box({
+    parent: screen,
+    left: 'center',
+    top: 'center',
+    width: '80%',
+    height: '90%',
+    border: 'line',
+    content: 'Welcome to my server. Here is your own private session.'
+  });
+
+  screen.render();
+}).listen(2300);
 ```
 
-And then you can connect to your server using `telnet(1)`
+## Contribution and License Agreement
 
-``` bash
-$ telnet localhost
-Trying ::1...
-telnet: connect to address ::1: Connection refused
-Trying 127.0.0.1...
-Connected to localhost.
-Escape character is '^]'.
+If you contribute code to this project, you are implicitly allowing your code
+to be distributed under the MIT license. You are also implicitly verifying that
+all code is your original work. `</legalese>`
 
-Connected to Telnet server!
-```
+## License
 
+Copyright (c) 2012-2015, Nathan Rajlich. (MIT Licensed)
+Copyright (c) 2015, Christopher Jeffrey. (MIT License)
 
-License
--------
+See LICENSE for more info.
 
-(The MIT License)
-
-Copyright (c) 2012 Nathan Rajlich &lt;nathan@tootallnate.net&gt;
-
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-'Software'), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-[rfc]: http://tools.ietf.org/html/rfc854
+[1]: https://github.com/TooTallNate/node-telnet

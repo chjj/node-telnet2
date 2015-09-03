@@ -1,15 +1,11 @@
 {
-  "name": "telnet",
-  "description": "Telnet implementation for Node.js",
+  "name": "telnet2",
+  "description": "Telnet implementation for Node.js based on node-telnet",
   "keywords": [
     "telnet"
   ],
   "version": "0.0.1",
-  "author": "Nathan Rajlich <nathan@tootallnate.net> (http://tootallnate.net)",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/TooTallNate/node-telnet.git"
-  },
+  "repository": "git://github.com/chjj/node-telnet2.git",
   "main": "lib/telnet.js",
   "scripts": {
     "test": "mocha --reporter spec"
